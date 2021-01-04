@@ -17,10 +17,15 @@ fn main() {
     let parcels = parse_input(input);
 
     println!("Part 1: {}", part1(&parcels));
+    println!("Part 2: {}", part2(&parcels));
 }
 
 fn part1(parcels: &Vec<Parcel>) -> u32 {
     parcels.iter().map(|p| p.wrap_required()).sum()
+}
+
+fn part2(parcels: &Vec<Parcel>) -> u32 {
+    parcels.iter().map(|p| p.ribbon_required()).sum()
 }
 
 fn parse_input(input: &str) -> Vec<Parcel> {
@@ -32,11 +37,13 @@ struct Parcel {
     width: u32,
     height: u32,
     smallest_side: u32,
+    shortest_perimeter: u32,
 }
 
 impl Parcel {
     fn new(l: u32, w: u32, h: u32) -> Parcel {
         let sides = vec![l * w, w * h, h * l];
+        let perimeters = vec![l + w, w + h, h + l];
 
         Parcel {
             length: l,
@@ -45,7 +52,11 @@ impl Parcel {
             smallest_side: match sides.iter().min() {
                 Some(s) => *s,
                 None => 0,
-            }
+            },
+            shortest_perimeter: match perimeters.iter().min() {
+                Some(s) => *s * 2,
+                None => 0,
+            },
         }
     }
 
@@ -63,8 +74,16 @@ impl Parcel {
         )
     }
 
+    fn volume(&self) -> u32 {
+        self.length * self.width * self.height
+    }
+
     fn wrap_required(&self) -> u32 {
         self.area() + self.smallest_side
+    }
+
+    fn ribbon_required(&self) -> u32 {
+        self.shortest_perimeter + self.volume()
     }
 }
 
@@ -80,6 +99,7 @@ mod tests {
         assert_eq!(3, p.width);
         assert_eq!(4, p.height);
         assert_eq!(6, p.smallest_side);
+        assert_eq!(10, p.shortest_perimeter);
     }
 
     #[test]
@@ -90,6 +110,7 @@ mod tests {
         assert_eq!(3, p.width);
         assert_eq!(4, p.height);
         assert_eq!(6, p.smallest_side);
+        assert_eq!(10, p.shortest_perimeter);
     }
 
     #[test]
@@ -98,5 +119,13 @@ mod tests {
 
         assert_eq!(52, p.area());
         assert_eq!(58, p.wrap_required());
+    }
+
+    #[test]
+    fn parcel_volume_and_wrap() {
+        let p = Parcel::new(2, 3, 4);
+
+        assert_eq!(24, p.volume());
+        assert_eq!(34, p.ribbon_required());
     }
 }
