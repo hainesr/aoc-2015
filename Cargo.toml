@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 md5 = "0.7.0"
+lazy_static = "1.4.0"
+fancy-regex = "0.4.1"
