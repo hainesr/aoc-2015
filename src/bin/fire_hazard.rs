@@ -27,11 +27,11 @@ fn part1(commands: &str) -> u32 {
         lights.run_command(command);
     }
 
-    lights.num_on()
+    lights.brightness()
 }
 
 pub struct LightingGrid {
-    grid: [[bool; LightingGrid::SIDE_LENGTH]; LightingGrid::SIDE_LENGTH],
+    grid: [[u8; LightingGrid::SIDE_LENGTH]; LightingGrid::SIDE_LENGTH],
 }
 
 impl LightingGrid {
@@ -40,7 +40,7 @@ impl LightingGrid {
 
     pub fn new() -> LightingGrid {
         LightingGrid {
-            grid: [[false; LightingGrid::SIDE_LENGTH]; LightingGrid::SIDE_LENGTH],
+            grid: [[0; LightingGrid::SIDE_LENGTH]; LightingGrid::SIDE_LENGTH],
         }
     }
 
@@ -58,7 +58,7 @@ impl LightingGrid {
     pub fn turn_on(&mut self, lx: usize, ly: usize, hx: usize, hy: usize) {
         for x in lx..=hx {
             for y in ly..=hy {
-                self.grid[x][y] = true;
+                self.grid[x][y] = 1;
             }
         }
     }
@@ -66,7 +66,7 @@ impl LightingGrid {
     pub fn turn_off(&mut self, lx: usize, ly: usize, hx: usize, hy: usize) {
         for x in lx..=hx {
             for y in ly..=hy {
-                self.grid[x][y] = false;
+                self.grid[x][y] = 0;
             }
         }
     }
@@ -74,13 +74,13 @@ impl LightingGrid {
     pub fn toggle(&mut self, lx: usize, ly: usize, hx: usize, hy: usize) {
         for x in lx..=hx {
             for y in ly..=hy {
-                self.grid[x][y] = !self.grid[x][y];
+                self.grid[x][y] = 1 - self.grid[x][y];
             }
         }
     }
 
-    pub fn num_on(&self) -> u32 {
-        self.grid.iter().flat_map(|r| r.iter()).map(|c| if *c { 1 } else { 0 }).sum()
+    pub fn brightness(&self) -> u32 {
+        self.grid.iter().flat_map(|r| r.iter().map(|&c| c as u32)).sum()
     }
 
     fn parse_command(cmd: &str) -> (&str, usize, usize, usize, usize) {
@@ -107,9 +107,9 @@ mod tests {
     #[test]
     fn new_grid() {
         let lights = LightingGrid::new();
-        assert!(lights.grid[0][0] == false);
-        assert!(lights.grid[999][999] == false);
-        assert_eq!(0, lights.num_on());
+        assert_eq!(0, lights.grid[0][0]);
+        assert_eq!(0, lights.grid[999][999]);
+        assert_eq!(0, lights.brightness());
     }
 
     #[test]
@@ -117,16 +117,16 @@ mod tests {
         let mut lights = LightingGrid::new();
 
         lights.turn_on(0, 0, 999, 999);
-        assert!(lights.grid[0][0]);
-        assert!(lights.grid[999][999]);
-        assert_eq!(1_000_000, lights.num_on());
+        assert_eq!(1, lights.grid[0][0]);
+        assert_eq!(1, lights.grid[999][999]);
+        assert_eq!(1_000_000, lights.brightness());
 
         lights.turn_off(500, 0, 999, 999);
-        assert!(lights.grid[0][0]);
-        assert!(lights.grid[499][0]);
-        assert!(lights.grid[500][0] == false);
-        assert!(lights.grid[999][999] == false);
-        assert_eq!(500_000, lights.num_on());
+        assert_eq!(1, lights.grid[0][0]);
+        assert_eq!(1, lights.grid[499][0]);
+        assert_eq!(0, lights.grid[500][0]);
+        assert_eq!(0, lights.grid[999][999]);
+        assert_eq!(500_000, lights.brightness());
     }
 
     #[test]
@@ -134,16 +134,16 @@ mod tests {
         let mut lights = LightingGrid::new();
 
         lights.toggle(500, 0, 999, 999);
-        assert!(lights.grid[0][0] == false);
-        assert!(lights.grid[499][0] == false);
-        assert!(lights.grid[500][0]);
-        assert!(lights.grid[999][999]);
+        assert_eq!(0, lights.grid[0][0]);
+        assert_eq!(0, lights.grid[499][0]);
+        assert_eq!(1, lights.grid[500][0]);
+        assert_eq!(1, lights.grid[999][999]);
 
         lights.toggle(0, 0, 999, 999);
-        assert!(lights.grid[0][0]);
-        assert!(lights.grid[499][0]);
-        assert!(lights.grid[500][0] == false);
-        assert!(lights.grid[999][999] == false);
+        assert_eq!(1, lights.grid[0][0]);
+        assert_eq!(1, lights.grid[499][0]);
+        assert_eq!(0, lights.grid[500][0]);
+        assert_eq!(0, lights.grid[999][999]);
     }
 
     #[test]
@@ -173,15 +173,15 @@ mod tests {
     #[test]
     fn run() {
         let mut lights = LightingGrid::new();
-        assert_eq!(0, lights.num_on());
+        assert_eq!(0, lights.brightness());
 
         lights.run_command("turn on 0,0 through 999,999");
-        assert_eq!(1_000_000, lights.num_on());
+        assert_eq!(1_000_000, lights.brightness());
 
         lights.run_command("toggle 0,0 through 999,0");
-        assert_eq!(999_000, lights.num_on());
+        assert_eq!(999_000, lights.brightness());
 
         lights.run_command("turn off 499,499 through 500,500");
-        assert_eq!(998_996, lights.num_on());
+        assert_eq!(998_996, lights.brightness());
     }
 }
