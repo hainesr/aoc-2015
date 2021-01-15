@@ -18,10 +18,21 @@ fn main() {
     let input = input.trim();
 
     println!("Part 1: {}", part1(input));
+    println!("Part 2: {}", part2(input));
 }
 
 fn part1(commands: &str) -> u32 {
-    let mut lights = LightingGrid::new();
+    let mut lights = LightingGrid::new(1);
+
+    for command in commands.lines() {
+        lights.run_command(command);
+    }
+
+    lights.brightness()
+}
+
+fn part2(commands: &str) -> u32 {
+    let mut lights = LightingGrid::new(2);
 
     for command in commands.lines() {
         lights.run_command(command);
@@ -31,6 +42,7 @@ fn part1(commands: &str) -> u32 {
 }
 
 pub struct LightingGrid {
+    version: u8,
     grid: [[u8; LightingGrid::SIDE_LENGTH]; LightingGrid::SIDE_LENGTH],
 }
 
@@ -38,8 +50,9 @@ impl LightingGrid {
     const SIDE_LENGTH: usize = 1000;
     const CMD_REGEX: &'static str = r"^(turn on|turn off|toggle) (\d+),(\d+) through (\d+),(\d+)$";
 
-    pub fn new() -> LightingGrid {
+    pub fn new(v: u8) -> LightingGrid {
         LightingGrid {
+            version: v,
             grid: [[0; LightingGrid::SIDE_LENGTH]; LightingGrid::SIDE_LENGTH],
         }
     }
@@ -47,11 +60,32 @@ impl LightingGrid {
     pub fn run_command(&mut self, cmd: &str) {
         let (keyword, lx, ly, hx, hy) = LightingGrid::parse_command(cmd);
 
-        match keyword {
-            "turn on" => self.turn_on(lx, ly, hx, hy),
-            "turn off" => self.turn_off(lx, ly, hx, hy),
-            "toggle" => self.toggle(lx, ly, hx, hy),
-            &_ => panic!("Bad command"),
+        if self.version == 1 {
+            match keyword {
+                "turn on" => self.turn_on(lx, ly, hx, hy),
+                "turn off" => self.turn_off(lx, ly, hx, hy),
+                "toggle" => self.toggle(lx, ly, hx, hy),
+                &_ => panic!("Bad command"),
+            }
+        } else {
+            match keyword {
+                "turn on" => self.adjust_brightness(1, lx, ly, hx, hy),
+                "turn off" => self.adjust_brightness(-1, lx, ly, hx, hy),
+                "toggle" => self.adjust_brightness(2, lx, ly, hx, hy),
+                &_ => panic!("Bad command"),
+            }
+        }
+    }
+
+    pub fn adjust_brightness(&mut self, value: i8, lx: usize, ly: usize, hx: usize, hy: usize) {
+        for x in lx..=hx {
+            for y in ly..=hy {
+                let current = self.grid[x][y] as i8;
+                if value == -1 && current == 0 {
+                    continue;
+                }
+                self.grid[x][y] = (current + value) as u8;
+            }
         }
     }
 
@@ -105,16 +139,43 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_grid() {
-        let lights = LightingGrid::new();
+    fn new_grid_v1() {
+        let lights = LightingGrid::new(1);
         assert_eq!(0, lights.grid[0][0]);
         assert_eq!(0, lights.grid[999][999]);
         assert_eq!(0, lights.brightness());
     }
 
     #[test]
+    fn new_grid_v2() {
+        let lights = LightingGrid::new(2);
+        assert_eq!(0, lights.grid[0][0]);
+        assert_eq!(0, lights.grid[999][999]);
+        assert_eq!(0, lights.brightness());
+    }
+
+    #[test]
+    fn lights_brightness() {
+        let mut lights = LightingGrid::new(2);
+
+        lights.adjust_brightness(1, 0, 0, 0, 0);
+        assert_eq!(1, lights.grid[0][0]);
+        assert_eq!(1, lights.brightness());
+
+        lights.adjust_brightness(-1, 0, 0, 10, 10);
+        assert_eq!(0, lights.grid[0][0]);
+        assert_eq!(0, lights.grid[10][10]);
+        assert_eq!(0, lights.brightness());
+
+        lights.adjust_brightness(2, 0, 0, 999, 999);
+        assert_eq!(2, lights.grid[0][0]);
+        assert_eq!(2, lights.grid[999][999]);
+        assert_eq!(2_000_000, lights.brightness());
+    }
+
+    #[test]
     fn lights_on_off() {
-        let mut lights = LightingGrid::new();
+        let mut lights = LightingGrid::new(1);
 
         lights.turn_on(0, 0, 999, 999);
         assert_eq!(1, lights.grid[0][0]);
@@ -131,7 +192,7 @@ mod tests {
 
     #[test]
     fn lights_toggle() {
-        let mut lights = LightingGrid::new();
+        let mut lights = LightingGrid::new(1);
 
         lights.toggle(500, 0, 999, 999);
         assert_eq!(0, lights.grid[0][0]);
@@ -171,8 +232,8 @@ mod tests {
     }
 
     #[test]
-    fn run() {
-        let mut lights = LightingGrid::new();
+    fn run_v1() {
+        let mut lights = LightingGrid::new(1);
         assert_eq!(0, lights.brightness());
 
         lights.run_command("turn on 0,0 through 999,999");
@@ -183,5 +244,23 @@ mod tests {
 
         lights.run_command("turn off 499,499 through 500,500");
         assert_eq!(998_996, lights.brightness());
+    }
+
+    #[test]
+    fn run_v2() {
+        let mut lights = LightingGrid::new(2);
+        assert_eq!(0, lights.brightness());
+
+        lights.run_command("turn on 0,0 through 999,999");
+        assert_eq!(1_000_000, lights.brightness());
+
+        lights.run_command("toggle 0,0 through 999,0");
+        assert_eq!(1_002_000, lights.brightness());
+
+        lights.run_command("turn off 499,499 through 500,500");
+        assert_eq!(1_001_996, lights.brightness());
+
+        lights.run_command("turn off 499,499 through 500,500");
+        assert_eq!(1_001_996, lights.brightness());
     }
 }
