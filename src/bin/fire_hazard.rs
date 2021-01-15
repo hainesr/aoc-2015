@@ -17,22 +17,12 @@ fn main() {
         .expect("Something went wrong reading the file.");
     let input = input.trim();
 
-    println!("Part 1: {}", part1(input));
-    println!("Part 2: {}", part2(input));
+    println!("Part 1: {}", run(1, input));
+    println!("Part 2: {}", run(2, input));
 }
 
-fn part1(commands: &str) -> u32 {
-    let mut lights = LightingGrid::new(1);
-
-    for command in commands.lines() {
-        lights.run_command(command);
-    }
-
-    lights.brightness()
-}
-
-fn part2(commands: &str) -> u32 {
-    let mut lights = LightingGrid::new(2);
+fn run(part: u8, commands: &str) -> u32 {
+    let mut lights = LightingGrid::new(part);
 
     for command in commands.lines() {
         lights.run_command(command);
