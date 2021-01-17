@@ -19,10 +19,14 @@ fn main() {
     let input = fs::read_to_string("./etc/assembly_required.txt")
         .expect("Something went wrong reading the file.");
     let input = input.trim();
-    let instructions = parse_instructions(input);
+    let mut instructions = parse_instructions(input);
 
     let a = get_signal("a", &instructions);
     println!("Part 1: {}", a);
+
+    let newb = Gate::None(Parameter::Value(a));
+    instructions.insert("b", newb);
+    println!("Part 2: {}", get_signal("a", &instructions));
 }
 
 fn get_signal(wire: &str, instructions: &HashMap<&str, Gate>) -> u16 {
